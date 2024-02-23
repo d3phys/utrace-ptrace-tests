@@ -1,0 +1,36 @@
+Purpose
+-------
+
+Most of the tests target ptrace(2) implementation.  Most of the ptrace(2) tests
+have ever failed only on the ptrace-by-utrace implementation.
+
+The tests/ subdirectory contains all the actual test sources.  On biarch
+platforms, biarch-tests/ also gets built from the same sources using the
+nondefault compiler mode.
+
+Preparation:
+	autoreconf -f -i
+	./configure
+
+Simple safe run:
+	make check
+
+Runs only the tests which crashed older kernels:
+	make xcheck
+
+Runs all the tests:
+	make check xcheck
+
+TESTTIME=<seconds> sets the testing time for the unreliable looping tests.
+
+
+License
+-------
+
+This software is provided 'as-is', without any express or implied
+warranty.  In no event will the authors be held liable for any damages
+arising from the use of this software.
+
+Permission is granted to anyone to use this software for any purpose,
+including commercial applications, and to alter it and redistribute it
+freely.

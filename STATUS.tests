@@ -1,0 +1,426 @@
+README
+======
+
+This file tries to keep track on current situation with tests.
+There are two sections: "Tests" and "Kernels".
+
+"Tests" gives short information what each test is, and what
+kernel(s) and hardware it is known to pass or fail, and so on.
+Tests known to fail on recent kernels and with no known fix
+should have "BROKEN" in capital letters. If a kernel in an old
+distribution is known to fail, but problem appears to be fixed
+in, say, vanilla kernel, it's not "BROKEN", it's "broken"
+(that particular kernel is broken).
+
+"Kernels" section is to be filled with test results for a particular
+kernel, most recent first. Old kernel's results will scroll down
+and be eventually deleted when too old to be of any interest.
+
+
+
+TESTS
+=====
+
+Latest version of a test can be downloaded from this URL:
+http://sources.redhat.com/cgi-bin/cvsweb.cgi/~checkout~/tests/ptrace-tests/tests/<TESTNAME>.c?cvsroot=systemtap
+
+
+attach-into-signal
+    Fedora 9 (kernel 2.6.26.6-79.fc9): BROKEN, see https://bugzilla.redhat.com/show_bug.cgi?id=470249
+
+attach-sigcont-wait
+	unreliable
+    Fedora 8 (kernel 2.6.26.6-49.fc8): fixed, see https://bugzilla.redhat.com/show_bug.cgi?id=248532
+    Fedora 9 (kernel 2.6.26.6-79.fc9): ok
+
+attach-wait-on-stopped
+    Fedora 8 (kernel 2.6.26.6-49.fc8): ok
+    Fedora 9 (kernel 2.6.26.6-79.fc9): ok
+    Rawhide: fixed, see https://bugzilla.redhat.com/show_bug.cgi?id=232837
+    Frysk: see http://sourceware.org/bugzilla/show_bug.cgi?id=4217
+
+block-step
+    Fedora 8 (kernel 2.6.26.6-49.fc8): ok
+    Fedora 9 (kernel 2.6.26.6-79.fc9): ok
+    Open bug related to virtualization:
+    https://bugzilla.redhat.com/show_bug.cgi?id=437028
+    "KVM: Intel/VMX: host kernel should support DEBUGCTLMSR=0x1d9"
+
+clone-get-signal
+	crasher, unreliable
+    Fedora 8 (kernel 2.6.26.6-49.fc8): fixed, see https://bugzilla.redhat.com/show_bug.cgi?id=312951
+    Fedora 9 (kernel 2.6.26.6-79.fc9): ok
+    Vanilla kernel: fixed upstream, see
+	http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=5ecfbae093f0c37311e89b29bfc0c9d586eace87
+	http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=f5b40e363ad6041a96e3da32281d8faa191597b9
+	http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=f358166a9405e4f1d8e50d8f415c26d95505b6de
+
+clone-multi-ptrace
+	unreliable
+	was observed only on RHEL 5.2 ia64 2.6.18-118.el5, fixed now.
+    Fedora 8 (kernel 2.6.26.6-49.fc8): ok
+    Fedora 9 (kernel 2.6.26.6-79.fc9): ok
+
+clone-ptrace
+    Fedora 8 (kernel 2.6.26.6-49.fc8): ok
+    Fedora 9 (kernel 2.6.26.6-79.fc9): fixed, see https://bugzilla.redhat.com/show_bug.cgi?id=461552
+
+detach-can-signal
+    Fedora 8 (kernel 2.6.26.6-49.fc8): ok
+    Fedora 9 (kernel 2.6.26.6-79.fc9): ok
+    Frysk: fixed, see http://sourceware.org/bugzilla/show_bug.cgi?id=3381 http://sourceware.org/bugzilla/show_bug.cgi?id=3595
+
+detach-parting-signal
+    (not documented! todo)
+
+detach-sigkill-race
+	unreliable
+    Fedora 11 (rawhide): BROKEN in 2.6.29-0.28.rc1.fc11.x86_64
+    Vanilla kernel: BROKEN in 2.6.28 (and presumably earlier)
+	Fixed by patch (pushed to -mm around 29 Jan 2009):
+	[PATCH 4/4] ptrace: fix possible zombie leak on PTRACE_DETACH
+
+detach-stopped
+    Fedora 8 (kernel 2.6.26.6-49.fc8): BROKEN, see https://bugzilla.redhat.com/show_bug.cgi?id=456335
+    Fedora 9 (kernel 2.6.26.6-79.fc9): BROKEN, see https://bugzilla.redhat.com/show_bug.cgi?id=454404
+    Vanilla kernel: BROKEN in v2.6.26-5982-g0988c37 (and presumably earlier)
+
+erestart-debugger
+erestart-debuggee
+    Fedora 8 (kernel 2.6.26.6-49.fc8): ok
+    Fedora 9 (kernel 2.6.26.6-79.fc9): ok
+    Rawhide: fixed, see https://bugzilla.redhat.com/show_bug.cgi?id=436183
+
+erestartsys
+    Fedora 8 (kernel 2.6.26.6-49.fc8): fixed, see https://bugzilla.redhat.com/show_bug.cgi?id=434995
+    Fedora 9 (kernel 2.6.26.6-79.fc9): ok
+    Vanilla kernel: fixed, see http://www.ussg.iu.edu/hypermail/linux/kernel/0802.3/2516.html
+
+erestartsys-trap
+    Fedora 11: BROKEN(biarch) in kernel-2.6.29.5-191.fc11.x86_64
+    Rawhide: BROKEN(biarch) in 2.6.31-0.38.rc1.git7.fc12.x86_64
+
+event-exit-proc-environ
+event-exit-proc-maps
+    Fedora 8 (kernel 2.6.26.6-49.fc8): fixed, see https://bugzilla.redhat.com/show_bug.cgi?id=285761
+    Fedora 9 (kernel 2.6.26.6-79.fc9): ok
+    Vanilla kernel: fixed, see http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=00ec99da43a7c2aed46c6595aa271b84bb1b1462;hp=6e800af233e0bdf108efb7bd23c11ea6fa34cdeb
+
+highmem-debugger
+highmem-debuggee
+    Fedora 11 (kernel 2.6.29.5-191.fc11.x86_64): ok
+
+late-ptrace-may-attach-check
+	crasher, unreliable
+    Fedora 8 (kernel 2.6.26.6-49.fc8): ok
+    Fedora 9 (kernel 2.6.26.6-79.fc9): fixed, see https://bugzilla.redhat.com/show_bug.cgi?id=449294
+
+o_tracevfork
+    Fedora 8 (kernel 2.6.26.6-49.fc8): ok?? but bug is open https://bugzilla.redhat.com/show_bug.cgi?id=464520
+    Fedora 9 (kernel 2.6.26.6-79.fc9): ok
+
+o_tracevfork-parent
+    Fedora 11 (kernel 2.6.29-0.218.rc7.git2.fc11.x86_64): BROKEN, see https://bugzilla.redhat.com/show_bug.cgi?id=486564
+
+o_tracevforkdone
+	x86_64 specific
+    Fedora 8 (kernel 2.6.26.6-49.fc8): BROKEN, see https://bugzilla.redhat.com/show_bug.cgi?id=468395
+    Fedora 9 (kernel 2.6.26.6-79.fc9): BROKEN, see https://bugzilla.redhat.com/show_bug.cgi?id=468089
+    Fedora 10: BROKEN
+
+peekpokeusr
+    Fedora 8 (kernel 2.6.26.6-49.fc8): ok
+    Fedora 9 (kernel 2.6.26.6-79.fc9): ok
+
+powerpc-altivec
+	ppc specific
+    Fedora 8 (kernel 2.6.26.6-49.fc8): not a bug, see https://bugzilla.redhat.com/show_bug.cgi?id=387821
+
+ppc-dabr-race
+	ppc specific
+    Fedora 8 (kernel 2.6.26.6-49.fc8): broken, see https://bugzilla.redhat.com/show_bug.cgi?id=439619
+    Fedora 8 latest: not known
+    Vanilla kernel: fixed, see https://bugzilla.redhat.com/attachment.cgi?id=299587
+
+ppc-ptrace-exec-full-regs
+	crasher, ppc specific
+    Fedora 8 (kernel 2.6.26.6-49.fc8): fixed, see https://bugzilla.redhat.com/show_bug.cgi?id=301791
+
+ptrace_cont-defeats-sigblock
+    Vanilla: ok in 2.6.28.2, possibly BROKEN in 2.6.29-rc1
+    Fedora 9: BROKEN
+    See https://bugzilla.redhat.com/show_bug.cgi?id=451849
+
+ptrace-cont-sigstop-detach
+    Fedora 8 (kernel 2.6.26.6-49.fc8): ok
+    Fedora 9 (kernel 2.6.26.6-79.fc9): ok
+    Rawhide: fixed, see https://bugzilla.redhat.com/show_bug.cgi?id=244162
+
+ptrace_event_clone
+    Fedora 9 (kernel 2.6.26.6-79.fc9): BROKEN, see https://bugzilla.redhat.com/show_bug.cgi?id=469693
+
+ptrace-on-job-control-stopped
+	misnamed, "job-control" means SIGSTOP here, not SIGTSTP
+    Fedora 8 (kernel 2.6.26.6-49.fc8): fixed, see https://bugzilla.redhat.com/show_bug.cgi?id=235521
+    Fedora 9 (kernel 2.6.26.6-79.fc9): ok
+    Frysk: fixed, see http://sourceware.org/bugzilla/show_bug.cgi?id=4330
+
+reparent-zombie
+    Fedora 8 (kernel 2.6.26.6-49.fc8): ok
+    Fedora 9 (kernel 2.6.26.6-79.fc9): ok
+    Vanilla kernel: fixed upstream after 2.6.26
+
+reparent-zombie-clone
+	crasher
+    Fedora 8 (kernel 2.6.26.6-49.fc8): fixed, see https://bugzilla.redhat.com/show_bug.cgi?id=450454
+    Fedora 9 (kernel 2.6.26.6-79.fc9): fixed, see https://bugzilla.redhat.com/show_bug.cgi?id=443552
+
+sa-resethand-on-cont-signal
+    Fedora 7: fixed, see https://bugzilla.redhat.com/show_bug.cgi?id=284311
+    Fedora 8 (kernel 2.6.26.6-49.fc8): ok
+    Fedora 9 (kernel 2.6.26.6-79.fc9): ok
+
+sigint-before-syscall-exit
+    Fedora 11 (kernel-2.6.30.5-43.fc11.x86_64): PASS
+
+signal-loss
+    Fedora 9 (kernel 2.6.26.6-79.fc9): BROKEN, see https://bugzilla.redhat.com/show_bug.cgi?id=469684
+
+step-into-handler
+    Fedora 8 (kernel 2.6.26.6-49.fc8): ok
+    Fedora 9 (kernel 2.6.26.6-79.fc9): ok
+
+step-jump-cont
+    Fedora 8 (kernel 2.6.26.6-49.fc8): ok
+    Fedora 9 (kernel 2.6.26.6-79.fc9): ok
+
+step-jump-cont-strict
+    Fedora 8 (kernel 2.6.26.6-49.fc8): fixed, see https://bugzilla.redhat.com/show_bug.cgi?id=450439
+    Fedora 9 (kernel 2.6.26.6-79.fc9): fixed, see https://bugzilla.redhat.com/show_bug.cgi?id=450379
+    Vanilla kernel: pending fix https://www.redhat.com/archives/utrace-devel/2008-April/msg00004.html
+
+step-simple
+    Fedora 9 (2.6.27.5-41.fc9.x86_64): ok
+    utrace patch (latest at 2008-12-05): broken
+    Vanilla kernel: ok
+
+step-through-sigret
+    Fedora 8 (kernel 2.6.26.6-49.fc8): fixed, see https://bugzilla.redhat.com/show_bug.cgi?id=441406
+    Fedora 9 (kernel 2.6.26.6-79.fc9): fixed, see https://bugzilla.redhat.com/show_bug.cgi?id=450378
+    Frysk: bug not closed yet (by mistake?) - http://sourceware.org/bugzilla/show_bug.cgi?id=6044
+
+step-to-breakpoint
+	Seems to depend on hardware/kernel options/etc
+    Fedora 8 (kernel 2.6.26.6-49.fc8): ok?? but see https://bugzilla.redhat.com/show_bug.cgi?id=439668
+    Fedora 9 (kernel 2.6.26.6-79.fc9): ok??
+
+stop-attach-then-wait
+    Fedora 8 (kernel 2.6.26.6-49.fc8): ok, but bug is not closed? - https://bugzilla.redhat.com/show_bug.cgi?id=454157
+    Fedora 9 (kernel 2.6.26.6-79.fc9): fixed, see https://bugzilla.redhat.com/show_bug.cgi?id=454156
+
+syscall-reset
+    Fedora 8 (kernel 2.6.26.6-49.fc8): ok
+    Fedora 9 (kernel 2.6.26.6-79.fc9): ok
+    Rawhide: fixed, see https://bugzilla.redhat.com/show_bug.cgi?id=438614
+    Vanilla kernel: fixed, see http://www.ussg.iu.edu/hypermail/linux/kernel/0803.2/index.html#0196
+
+tif-syscall-trace-after-detach
+	unreliable
+    Fedora 8 (kernel 2.6.26.6-49.fc8): ok
+    Fedora 9 (kernel 2.6.26.6-79.fc9): ok
+    RHEL-4.6: fixed, see https://bugzilla.redhat.com/show_bug.cgi?id=276861 https://bugzilla.redhat.com/show_bug.cgi?id=276091
+
+tracer-lockup-on-sighandler-kill
+	crasher, unreliable
+    Fedora 7: fixed, see https://bugzilla.redhat.com/show_bug.cgi?id=267161
+    Fedora 8 (kernel 2.6.26.6-49.fc8): ok
+    Fedora 9 (kernel 2.6.26.6-79.fc9): ok
+
+user-area-access
+	s390 specific
+    Fedora 8 (kernel 2.6.26.6-49.fc8): ok
+
+user-area-padding
+	crasher, s390 specific
+    Fedora 8 (kernel 2.6.26.6-49.fc8): ok
+
+user-regs-peekpoke
+    Fedora 8 (kernel 2.6.26.6-49.fc8): ok
+    Fedora 9 (kernel 2.6.26.6-79.fc9): ok
+
+waitpid-double-report
+    Fedora 11: ok
+    RHEL-5.3: BROKEN in 2.6.18-128.el5 (tested: ia64, i386)
+
+watchpoint
+    Fedora 8 (kernel 2.6.26.6-49.fc8): fixed, see https://bugzilla.redhat.com/show_bug.cgi?id=387741
+    Fedora 9 (kernel 2.6.26.6-79.fc9): ok
+    Open bug related to virtualization:
+    https://bugzilla.redhat.com/show_bug.cgi?id=504374
+    "kernel: hw DR_* watchpoint registers are ignored"
+
+x86_64-cs
+	crasher
+    Fedora 8 (kernel 2.6.26.6-49.fc8): fixed, see https://bugzilla.redhat.com/show_bug.cgi?id=431314
+    Fedora 9 (kernel 2.6.26.6-79.fc9): ok
+    Vanilla kernel: fixed in 2.6.25-rc1
+
+x86_64-gsbase
+    Fedora 8 (kernel 2.6.26.6-49.fc8): ok
+    Fedora 9 (kernel 2.6.26.6-79.fc9): ok
+    Vanilla kernel: fixed in 2.6.25-rc1, see http://www.ussg.iu.edu/hypermail/linux/kernel/0711.2/2002.html
+
+x86_64-ia32-gs
+    Fedora 7: fixed, see https://bugzilla.redhat.com/show_bug.cgi?id=247561
+    Fedora 8 (kernel 2.6.26.6-49.fc8): ok
+    Fedora 9 (kernel 2.6.26.6-79.fc9): ok
+
+
+
+KERNELS
+=======
+
+Kernel test summaries, most recent first.
+
+While testing, set $TESTTIME at least to 60.
+List both failed and passed tests, over time new tests are added and
+just "all other tests passed" does not account for future tests!
+
+Fedora 11 (kernel-2.6.30.5-43.fc11.x86_64):
+    PASS: sigint-before-syscall-exit
+
+Fedora 11 (kernel-2.6.29.5-191.fc11.x86_64):
+    FAIL: erestartsys-trap(biarch)
+    PASS: erestartsys-trap(native) highmem-debugger
+
+Fedora 11 (kernel-2.6.29.5-191.fc11.i686):
+    PASS: erestartsys-trap
+
+Fedora 11 (kernel 2.6.29-0.28.rc1.fc11.x86_64) x86_64:
+    FAIL: attach-into-signal
+    FAIL: o_tracevfork-parent (tested kernel 2.6.29-0.218.rc7.git2.fc11.x86_64)
+    SKIP: erestart-debugger powerpc-altivec ppc-dabr-race step-to-breakpoint
+	user-area-access user-area-padding x86_64-gsbase
+    PASS: attach-sigcont-wait attach-wait-on-stopped block-step
+	clone-get-signal clone-multi-ptrace clone-ptrace detach-can-signal
+	detach-parting-signal detach-stopped erestartsys
+	event-exit-proc-environ event-exit-proc-maps
+	late-ptrace-may-attach-check o_tracevfork o_tracevforkdone peekpokeusr
+	ppc-ptrace-exec-full-regs ptrace-cont-sigstop-detach ptrace_event_clone
+	ptrace-on-job-control-stopped reparent-zombie reparent-zombie-clone
+	sa-resethand-on-cont-signal signal-loss step-into-handler step-jump-cont
+	step-jump-cont-strict step-simple step-through-sigret
+	stop-attach-then-wait syscall-reset tif-syscall-trace-after-detach
+	tracer-lockup-on-sighandler-kill user-regs-peekpoke watchpoint
+	x86_64-cs x86_64-ia32-gs
+    Notes:
+	Kernel is from rawhide (note f11 in its name).
+	attach-into-signal now fails nondeterministically and rarely.
+	Many messages in kernel log, all like this:
+	"WARNING: at kernel/ptrace.c:534 ptrace_report_signal+0x182/0x2a9()"
+	Corresponding part of the source code:
+        /*
+         * We're resuming.  If there's no signal to deliver, just go.
+         * If we were given a signal, deliver it now.
+         */
+        WARN_ON(task->last_siginfo != info);
+        task->last_siginfo = NULL;
+        if (!task->exit_code)
+                return UTRACE_SIGNAL_REPORT | resume;
+
+Fedora 10 (kernel 2.6.27.9-159.fc10.x86_64) x86_64
+    FAIL: attach-into-signal detach-parting-signal detach-stopped
+	o_tracevforkdone ptrace_event_clone signal-loss
+    SKIP: erestart-debugger powerpc-altivec ppc-dabr-race user-area-access
+	x86_64-ia32-gs
+	user-area-padding
+    PASS: attach-sigcont-wait attach-wait-on-stopped block-step
+	clone-multi-ptrace clone-ptrace detach-can-signal erestartsys
+	event-exit-proc-environ event-exit-proc-maps o_tracevfork
+	peekpokeusr ptrace-cont-sigstop-detach ptrace-on-job-control-stopped
+	reparent-zombie sa-resethand-on-cont-signal step-into-handler
+	step-jump-cont step-jump-cont-strict step-simple
+	step-through-sigret step-to-breakpoint stop-attach-then-wait
+	syscall-reset tif-syscall-trace-after-detach user-regs-peekpoke
+	watchpoint x86_64-gsbase
+	late-ptrace-may-attach-check tracer-lockup-on-sighandler-kill
+	clone-get-signal ppc-ptrace-exec-full-regs x86_64-cs
+	reparent-zombie-clone
+    ????: o_tracevfork-parent
+    Notes:
+	ppc-ptrace-exec-full-regs on x86_64 passed?!
+	message: "o_tracevforkdone.c:189: test_vfork_done: Assertion XXX failed."
+
+Fedora 10 (kernel 2.6.27.9-159.fc10.i686) i386
+    FAIL: attach-into-signal detach-parting-signal detach-stopped
+	o_tracevforkdone ptrace_event_clone signal-loss
+    SKIP: erestart-debugger powerpc-altivec ppc-dabr-race step-to-breakpoint
+	user-area-access x86_64-gsbase
+	user-area-padding
+    PASS: attach-sigcont-wait attach-wait-on-stopped block-step
+	clone-multi-ptrace clone-ptrace detach-can-signal erestartsys
+	event-exit-proc-environ event-exit-proc-maps o_tracevfork peekpokeusr
+	ptrace-cont-sigstop-detach ptrace-on-job-control-stopped
+	reparent-zombie sa-resethand-on-cont-signal step-into-handler
+	step-jump-cont step-jump-cont-strict step-simple step-through-sigret
+	stop-attach-then-wait syscall-reset tif-syscall-trace-after-detach
+	user-regs-peekpoke watchpoint x86_64-ia32-gs
+	late-ptrace-may-attach-check tracer-lockup-on-sighandler-kill
+	clone-get-signal ppc-ptrace-exec-full-regs x86_64-cs
+	reparent-zombie-clone
+
+RHEL 5.3 (kernel 2.6.18-128.el5) x86_64
+    FAIL: block-step detach-stopped step-jump-cont-strict stop-attach-then-wait
+	x86_64-gsbase
+	clone-get-signal (see note)
+    SKIP: powerpc-altivec ppc-dabr-race user-area-access x86_64-ia32-gs
+	user-area-padding
+    PASS: attach-into-signal attach-sigcont-wait attach-wait-on-stopped
+	clone-multi-ptrace clone-ptrace detach-can-signal detach-parting-signal
+	erestart-debugger erestartsys event-exit-proc-environ
+	event-exit-proc-maps o_tracevfork o_tracevforkdone peekpokeusr
+	ptrace-cont-sigstop-detach ptrace_event_clone
+	ptrace-on-job-control-stopped reparent-zombie
+	sa-resethand-on-cont-signal signal-loss step-into-handler
+	step-jump-cont step-simple step-through-sigret step-to-breakpoint
+	syscall-reset tif-syscall-trace-after-detach user-regs-peekpoke
+	watchpoint
+	late-ptrace-may-attach-check tracer-lockup-on-sighandler-kill
+	ppc-ptrace-exec-full-regs x86_64-cs reparent-zombie-clone
+    Notes:
+	Looks like "make xcheck" hung on clone-get-signal. ^C worked.
+	messages:
+	"step-jump-cont-strict: step-jump-cont-strict.c:366: test_singlestep (, instruction 7): Trap flag expected 1: found 0"
+	"x86_64-gsbase: x86_64-gsbase.c:126: main: Assertion `l == (unsigned long) &check1' failed"
+	biarch x86_64-cs test printed "x86_64-cs: WIFSIGNALED - WTERMSIG = 11"
+	message but then listed as PASSed.
+
+RHEL 5.3 (kernel 2.6.18-128.el5) ia64
+    FAIL: detach-stopped clone-multi-ptrace
+	clone-get-signal (see note)
+    SKIP: x86_64-ia32-gs x86_64-gsbase powerpc-altivec watchpoint
+	block-step step-jump-cont step-jump-cont-strict ppc-dabr-race
+	step-into-handler user-area-access user-regs-peekpoke erestartsys
+	erestart-debugger step-to-breakpoint syscall-reset
+	step-through-sigret
+	tracer-lockup-on-sighandler-kill x86_64-cs
+    PASS: ptrace-on-job-control-stopped attach-wait-on-stopped
+	detach-can-signal attach-into-signal attach-sigcont-wait
+	sa-resethand-on-cont-signal ptrace-cont-sigstop-detach
+	ptrace_event_clone tif-syscall-trace-after-detach
+	event-exit-proc-maps event-exit-proc-environ peekpokeusr
+	signal-loss reparent-zombie step-simple clone-multi-ptrace
+	clone-ptrace o_tracevfork o_tracevforkdone detach-parting-signal
+	late-ptrace-may-attach-check ppc-ptrace-exec-full-regs
+	user-area-padding reparent-zombie-clone
+    Notes:
+	Looks like "make xcheck" hung on clone-get-signal. ^C worked.
+
+Fedora 9 (kernel 2.6.26.6-79.fc9) x86_64
+    FAIL: attach-into-signal detach-stopped o_tracevforkdone
+	ptrace_event_clone signal-loss
+    PASS: ???
+
+Fedora 8 (kernel 2.6.26.6-49.fc8) x86_64
+    FAIL: detach-stopped o_tracevforkdone ppc-dabr-race
+    PASS: ???

@@ -1,0 +1,260 @@
+ptrace(2) Syscall Documentation
+
+This software is provided 'as-is', without any express or implied
+warranty.  In no event will the authors be held liable for any damages
+arising from the use of this software.
+
+Permission is granted to anyone to use this software for any purpose,
+including commercial applications, and to alter it and redistribute it
+freely.
+
+
+Terminology
+-----------
+
+debuggee = (inferior) = thread for ptrace(2) to act on, it is being debugged
+debugger = (superior) = running program calling ptrace(2) on its debuggee
+process = not used here as it is ambiguous,
+          it may refer to a whole `thread group' or a single `thread'
+PID = process ID = shared by all threads of a `thread group'
+TID = thread ID = unique identification of each process in a thread group
+thread group = a set of threads with unique PID (but many TIDs of its members),
+               seen as a single line in `ps xwf' (usually called as process)
+thread = single thread with unique TID, seen as a single line in `ps -eLf'
+POSIX thread = thread being tracked by libpthread's pthread_t (struct pthread)
+
+
+PID vs. TID
+-----------
+
+Both PTRACE_ATTACH and PTRACE_DETACH must be called to each debuggee thread
+separately.  After the thread group starts to be ptrace(2)d, waitpid(2) starts
+to apply on each thread separately - waitpid(2) starts accepting TIDs (not
+PIDs).  It becomes more like waittid(2) for the purposes of ptrace(2) (no real
+syscall called waittid(2) exists). [vda -- What "turns on" this behavior?
+It conceivably may be triggered by "this process traces at least one debuggee"
+but more likely it's just that debuggees report to waitpid() separately,
+whereas threads in "usual" children (not traced) report as a group.]
+
+
+Tracing Stop
+------------
+
+For any PTRACE_* operation (except PTRACE_KILL, PTRACE_ATTACH and
+PTRACE_TRACEME) the debuggee has to be stopped otherwise the debugger just gets
+ESRCH.
+
+PTRACE_ATTACH only initiates the stopping operation.  You have to retrieve the
+SIGSTOP signal (see `SIGSTOP') before being certain the debuggee is stopped.
+
+If an debuggee thread is running and we need to asynchronously stop it one
+should tgkill(2) it.  We can send arbitrary signal which we have to discard
+after we receive it back by waitpid(2).  Thread becomes `T (tracing stop)' that
+moment.
+
+
+SIGSTOP
+-------
+
+Thread may be stopped either by tgkill(SIGSTOP) or by a debugger.  Both stops
+behave similiar but differ in `State:' field in `/proc/PID/status' as
+kill(1)/kill(2) prints `T (stopped)' but ptrace(2) prints `T (tracing stop)'.
+
+Regular pause(2) prints a different state - `S (sleeping)'.
+
+`T (stopped)' is global for the whole thread group while `T (tracing stop)' is
+specific for each thread. [clarification? Isn't it just because kill(2)
+acts on the whole process group? IOW: with tgkill(2) it is possible
+to SIGSTOP individual threads, right?]
+
+[does PTRACE_TRACEME stop the debuggee? Is it mandatory to raise(SIGSTOP)
+immediately after PTRACE_TRACEME, as many examples do, or is it just
+a recommended way to stop and syncronize with parent?
+what will happen if raise(SIGSTOP) is not done (see
+tracer-lockup-on-sighandler-kill.c testcase - is it buggy wrt this?
+(it is buggy on several other counts, but that's not related
+to this question...)]
+
+
+Ptrace stops (SIGTRAP)
+----------------------
+
+Each usual ptrace event generates one SIGTRAP delivered to the debuggee.  As
+the debuggee is being debugged the debuggee is stopped instead of the signal
+delivery and the signal can be retrieved by the debugger using
+waitpid(debuggee).  In debuggee, after successful execve an extra SIGTRAP
+is sent to it.
+
+There are two kinds of ptrace stops: actual signals that are intercepted by
+ptrace, and non-signal stops (ptrace_notify calls in the vanilla kernel).
+To the userland caller of waitpid, these both look like they are signals.
+The non-signal stops appear to waitpid as SIGTRAP (or SIGTRAP with more
+high bits OR'd in), but they are not really signals.  (In contrast, a
+SIGTRAP produced by a hardware exception is a real signal, e.g. breakpoint hits.
+The artificial SIGTRAP at exec is a normal real signal too - but not if you
+are using PTRACE_O_TRACEEXEC; then PTRACE_EVENT_EXEC is a ptrace_notify stop.)
+
+All real signal stops happen at only one place: right before returning to
+user mode.  (In the kernel code, it's in get_signal_to_deliver.  This is
+where all signal actions take place: running handlers, job control stops,
+or death.)  All the PTRACE_EVENT_* stops happen inside system calls.  So,
+by definition each one of those is going to happen - and then nothing else
+happen until PTRACE_CONT - before you get to "about to return to user mode",
+where each queued real signal can lead to a stop before checking for more
+signals and actually returning.
+
+So in the case of vfork, you'll get (if all enabled):
+        non-signal stop for syscall entry, wait for PTRACE_CONT
+        non-signal stop for PTRACE_EVENT_VFORK, wait for PTRACE_CONT
+        non-signal stop for PTRACE_EVENT_VFORK_DONE, wait for PTRACE_CONT
+        non-signal stop for syscall exit, wait for PTRACE_CONT
+        if child died, signal stop for SIGCHLD, wait for PTRACE_CONT
+
+At most of the non-signal stops, a signal passed to PTRACE_CONT is ignored.
+The exception is PTRACE_SYSCALL stops, which by tradition queue the signal
+(effectively as if by tkill).  Only in signal stops does the signal number
+given to PTRACE_CONT really lead directly to an immediate signal delivery.
+
+
+SIGCHLD
+-------
+
+Each ptrace event generates one SIGCHLD delivered to the debugger.  One can
+install a SIGCHLD handler in the debugger.
+
+Still at the moment the handler is invoked waitpid(debuggee, ..., WNOHANG)
+still may return 0 (no signals to report) - waitpid(2) may have to wait for the
+signal even after SIGCHLD has been delivered to the debugger.  Failed to
+reproduce this race, though.  GDB also still even contains this race.
+
+
+Signals Multiplicity
+--------------------
+
+man 7 signals: Real-time Signals
+
+1.  Multiple instances of real-time signals can be queued.  By contrast, if
+    multiple instances of a standard signal are delivered while that signal is
+    currently blocked, then only one instance is queued.
+
+If you call waitpid(2) you may get mutiple standard signals for the same
+debuggee thread.  Specifically after PTRACE_ATTACH the first signal may not be
+SIGSTOP.  Still you should call just waitpid(2) again to receive the scheduled
+SIGSTOP. [What to do to not lose that another signal? Reinject it back at next
+restarting PTRACE_xxx op?]
+
+
+Signals Redelivery
+------------------
+
+Any signal you receive by waitpid(2) which you are not interested in should be
+passed back to the debuggee otherwise it would be lost.  You may use usually
+PTRACE_CONT (or even PTRACE_DETACH) with the DATA parameter set to the signal
+number to deliver.
+
+You can only deliver one signal at a time this way.  If you do tgkill(2) it
+just means you will stop the debuggee and you will PTRACE_CONT it with the
+desired signal afterwards.
+
+To detach a thread group in a stopped state (`T (stopped)') you have to call
+PTRACE_DETACH(data = SIGSTOP) for each its thread.  This functionality works
+reliably only in some kernel versions.  Also the ptrace(2) man page is wrong
+and should have removed its wording `and not SIGSTOP':
+	If data is non-zero and not SIGSTOP, it is interpreted as a signal to
+	be delivered to the child; otherwise, no signal is delivered.
+
+
+PTRACE_ATTACH
+-------------
+
+Each PTRACE_ATTACH for a thread generates one SIGSTOP for the debuggee thread.
+You must be careful while attaching and detaching to not stop the debuggee by
+leftover SIGSTOP.  You have to receive (and not send back) one SIGSTOP for each
+PTRACE_ATTACH (therefore for each debugged thread) - with one exception:
+
+Standard signals do not queue (see `Signals Multiplicity') and SIGSTOP is
+a standard signal.  SIGSTOP cannot be caught - if SIGSTOP is active the thread
+is `T (stopped)'.  SIGSTOP can be cleared only by SIGCONT.  SIGSTOP activation
+can be caught by waitpid(2) but only once (without any SIGCONT).  New SIGSTOP
+while a thread is already `T (stopped)' is a nop, incl. SIGSTOP from
+PTRACE_ATTACH.  Therefore you have to be careful you will hang on waiting for
+SIGSTOP if a thread (a) is already `T (stopped)' before PTRACE_ATTACH and
+(b) if the native debuggee thread's parent already did waitpid(2) (and received
+SIGSTOP) before.
+
+
+Parentship
+----------
+
+The debugger becomes some virtual parent of its debuggee to be able to
+waitpid(2) on the debuggee.  Still getppid(2) called by debuggee is not
+affected by this change.  [I presume "real" parent also can waitpid()
+on the child and see it exiting/stopping/restarting.
+Will it see ptrace stops (as opposed to normal signal stops)?
+PTRACE_ATTACH generated SIGSTOP? execve's magic SIGTRAP? etc]
+
+
+POSIX Threads
+-------------
+
+Each POSIX thread (pthreads(7)) is represented by one pthread_t value.  Each
+pthread_t is represented by one TID.  pthread_t is `struct pthread *' but this
+structure is private to glibc.  You may examine the debuggee threads using
+libthread_db (implemented by glibc nptl_db/).  List of the threads can be found
+by td_ta_thr_iter(3).  You may catch when they are created by using
+td_ta_event_addr(3) and associated functions.
+
+You may create TID not representing any POSIX thread by clone(2).  List of TIDs
+can be found in /proc/*/tasks/*, you may catch when they are created by using
+PTRACE_O_TRACECLONE.
+
+Initializing libthread_db requires some nontrivial code to provide
+ps_pglobal_lookup() function in the debugger which needs to parse ELF .symtab
+of libpthread in use by the debuggee.
+
+
+Syscalls
+--------
+
+ptrace(2) - PTRACE_ATTACH - start debugging TID
+ptrace(2) - PTRACE_DETACH - finish debugging TID,
+                            possibly with delivery of a specified signal
+ptrace(2) - PTRACE_CONT - continue execution of TID,
+                          possibly with delivery of a specified signal
+waitpid(2) - wait on PID in normal case, wait on TID if ptrace(2)ing
+             Signal has to be delivered to the debuggee, not to the debugger.
+             Signals delivered to the debugger (SIGCHLD) can be caught only by
+             a signal handler (signal(2)/sigaction(2)).
+tkill(2) - send a signal to the specific TID, depreceated, see tgkill(2)
+tgkill(2) - send a signal to the specific TID of the specific PID
+kill(2) - send a signal to the whole PID,
+          signal gets sent specifically to one of its arbitrary chosen TIDs
+
+
+PTRACE_SYSCALL orig_eax
+-----------------------
+
+On i386, it has always been that at entry tracing, eax = -ENOSYS and orig_eax
+= incoming %eax value (syscall #).  Here, ptrace can change the value of
+orig_eax to affect what syscall the thread will attempt.  If the orig_eax value
+is invalid (< 0 or > __NR_syscall_max), then no syscall is attempted and %eax
+is returned as is.  This means that for an invalid syscall # in
+orig_eax--whether originally there or put there by ptrace while at the entry
+stop--whatever register state (eax included) that ptrace left there after the
+entry tracing stop will be what the user sees.  Thus you can use syscall entry
+tracing to do what PTRACE_SYSEMU does, which is to let the debugger intercept
+and simulate system call attempts precisely how it chooses.  This is simpler
+than tweaking at both entry and exit tracing just to jump around the syscall
+and set the eax value you want.
+
+
+Not Authoritative
+-----------------
+
+The stable releases of Linux kernel on kernel.org (called "vanilla kernels")
+provide the standard interface by definition.  Any behavior described
+differently in this document should get fixed in this document.
+Any guarantees not met in the current vanilla kernels should get withdrawn from
+this document.  Some guarantees described in this document may get withdrawn as
+not upheld by either future vanilla kernel versions or by alternate
+implementations (such as UTRACE - http://people.redhat.com/roland/utrace/ ).

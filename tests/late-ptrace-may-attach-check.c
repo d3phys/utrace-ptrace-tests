@@ -1,0 +1,99 @@
+/* This software is provided 'as-is', without any express or implied
+   warranty.  In no event will the authors be held liable for any damages
+   arising from the use of this software.
+   
+   Permission is granted to anyone to use this software for any purpose,
+   including commercial applications, and to alter it and redistribute it
+   freely.  */
+
+#define _GNU_SOURCE 1
+#ifdef __ia64__
+#define ia64_fpreg ia64_fpreg_DISABLE
+#define pt_all_user_regs pt_all_user_regs_DISABLE
+#endif	/* __ia64__ */
+#include <sys/ptrace.h>
+#ifdef __ia64__
+#undef ia64_fpreg
+#undef pt_all_user_regs
+#endif	/* __ia64__ */
+#include <linux/ptrace.h>
+#include <sys/types.h>
+#include <sys/user.h>
+#if defined __i386__ || defined __x86_64__
+#include <sys/debugreg.h>
+#endif
+
+#include <stdio.h>
+#include <unistd.h>
+#include <pthread.h>
+#include <signal.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <assert.h>
+
+/* WARNING: The real testing count is probably unbound.  */
+#define DEFAULT_TESTTIME 10	/* seconds */
+
+static volatile pid_t child;
+
+static void
+cleanup (void)
+{
+  if (child > 0)
+    kill (child, SIGKILL);
+  child = 0;
+}
+
+static void
+handler_fail (int signo)
+{
+  cleanup ();
+  signal (signo, SIG_DFL);
+  raise (signo);
+}
+
+static void *
+thread_func (void *argv0_pointer)
+{
+  errno = 0;
+  execl ("/proc/self/exe", argv0_pointer, "child", NULL);
+  assert_perror (errno);
+  /* NOTREACHED */
+  assert (0);
+}
+
+int main(int argc, const char *argv[])
+{
+  char *testtime = getenv ("TESTTIME");
+  time_t testend = time (NULL) + (testtime != NULL ? atoi (testtime)
+						   : DEFAULT_TESTTIME);
+  pthread_t thread;
+  int i;
+
+  atexit (cleanup);
+  signal (SIGABRT, handler_fail);
+  signal (SIGINT, handler_fail);
+
+  if ((argc != 2 || strcmp (argv[1], "child") != 0) && (child = fork()))
+    {
+      do
+	{
+	  ptrace(PTRACE_ATTACH, child, NULL, NULL);
+	  ptrace(PTRACE_DETACH, child, NULL, NULL);
+	}
+      while (time (NULL) < testend);
+
+      return 0;
+    }
+
+  errno = 0;
+  i = pthread_create (&thread, NULL, thread_func, (void *) argv[0]);
+  assert_perror (errno);
+  assert (i == 0);
+
+  for (;;)
+    pause();
+  /* NOTREACHED */
+  assert (0);
+}
